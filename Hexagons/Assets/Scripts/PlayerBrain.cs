@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using UnityEngine;
 
 [RequireComponent(typeof(HexagonController))]
-public class PlayerController : MonoBehaviour, IHexagonController
+public class PlayerBrain : MonoBehaviour, IHexagonBrain
 {
     private HexagonController _hexagonController;
 

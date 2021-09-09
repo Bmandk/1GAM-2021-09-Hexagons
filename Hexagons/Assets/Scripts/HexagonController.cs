@@ -27,12 +27,11 @@ public class HexagonController : MonoBehaviour
 
     public float Radius => radius;
 
+    // Set of all hexagons
     private static HashSet<HexagonController> _hexagons = new HashSet<HexagonController>();
-
+    
+    [SerializeField]
     private HexagonController[] _attachedHexagons = new HexagonController[6];
-
-    private HexagonController controller;
-    private int? ownerSide;
 
     private void Start()
     {
@@ -54,36 +53,32 @@ public class HexagonController : MonoBehaviour
 
     public void Move(Vector2 dir)
     {
-        transform.Translate(dir * (Time.deltaTime * movementSpeed));
+        SetTRS((Vector2)transform.position + dir * (Time.deltaTime * movementSpeed), rotation, radius);
+    }
+
+    private void SetTRS(Vector2 position, float rotation, float radius)
+    {
+        transform.position = position;
         CheckAttachment();
         MoveAttached();
     }
-
-    // add start to queue
-    // Loop while queue is not empty
-    // -Get next from queue
-    // -Loop all attached
-    // --if (attachedHexagon is not checked && attachedHexagon is not in queue)
-    // ---Move attachedHexagon
-    // ---Add attachedHexagon to queue
-    // -Mark hexagon as checked
+    
     private void MoveAttached()
     {
-        UniqueQueue<HexagonController> queue = new UniqueQueue<HexagonController>();
-        queue.Enqueue(this);
-        HashSet<HexagonController> checkedHexagons = new HashSet<HexagonController>(); 
-        while (queue.Count < 0)
-        {
-            var hexagon = queue.Dequeue();
-            var points = GetAttachmentPoints();
-            for (var i = 0; i < _attachedHexagons.Length; i++)
-            {
-                var attachedHexagon = _attachedHexagons[i];
-                if (attachedHexagon == null ||
-                    checkedHexagons.Contains(attachedHexagon) ||
-                    queue.Contains(attachedHexagon)) continue;
+        var hexagons = GetConnectedHexagonsBFS();
+        HashSet<HexagonController> movedHexagons = new HashSet<HexagonController>();
 
-                attachedHexagon.CalculateAttachedMovement(transform.position, points[i], radius);
+        foreach (HexagonController hexagon in hexagons)
+        {
+            var points = hexagon.GetAttachmentPoints();
+
+            for (int i = 0; i < hexagon._attachedHexagons.Length; i++)
+            {
+                var attachedHexagon = hexagon._attachedHexagons[i];
+                if (attachedHexagon == null || movedHexagons.Contains(attachedHexagon)) continue;
+                
+                attachedHexagon.CalculateAttachedMovement(hexagon.transform.position, points[i], hexagon.radius);
+                movedHexagons.Add(attachedHexagon);
             }
         }
     }
@@ -117,7 +112,6 @@ public class HexagonController : MonoBehaviour
                 if (Vector2.Distance(p1, p2) < attachPointRadius + hexagon.attachPointRadius)
                 {
                     Attach(i, hexagon, j);
-                    Debug.Log("Attached");
                 }
             }
         }
@@ -126,7 +120,7 @@ public class HexagonController : MonoBehaviour
     public void Attach(int mySide, HexagonController hexagon, int theirSide)
     {
         _attachedHexagons[mySide] = hexagon;
-        hexagon.Attach(theirSide, hexagon);
+        hexagon.Attach(theirSide, this);
         
         var points = GetAttachmentPoints();
         hexagon.CalculateAttachedMovement(transform.position, points[mySide], radius);
@@ -135,7 +129,6 @@ public class HexagonController : MonoBehaviour
     public void Attach(int side, HexagonController hexagon)
     {
         _attachedHexagons[side] = hexagon;
-        ownerSide = side;
     }
 
     public Vector2[] GetAttachmentPoints()
@@ -211,7 +204,6 @@ public class HexagonController : MonoBehaviour
     private void GenerateHexagon()
     {
         BoundingRadius = radius + attachPointRadius;
-        ownerSide = null;
         _attachedHexagons = new HexagonController[6];
     }
 
@@ -225,5 +217,29 @@ public class HexagonController : MonoBehaviour
             Gizmos.DrawWireSphere(point, attachPointRadius);
         }
         Gizmos.DrawWireSphere(transform.position, Radius + attachPointRadius);
+    }
+
+    public List<HexagonController> GetConnectedHexagonsBFS()
+    {
+        List<HexagonController> hexagons = new List<HexagonController>();
+        UniqueQueue<HexagonController> queue = new UniqueQueue<HexagonController>();
+        queue.Enqueue(this);
+        
+        while (queue.Count > 0)
+        {
+            var hexagon = queue.Dequeue();
+            for (var i = 0; i < hexagon._attachedHexagons.Length; i++)
+            {
+                var attachedHexagon = hexagon._attachedHexagons[i];
+                
+                if (attachedHexagon == null ||
+                    hexagons.Contains(attachedHexagon)) continue;
+                
+                queue.Enqueue(attachedHexagon);
+            }
+            hexagons.Add(hexagon);
+        }
+
+        return hexagons;
     }
 }

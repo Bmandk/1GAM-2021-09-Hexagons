@@ -1,6 +1,6 @@
 ﻿using UnityEngine;
 
-public interface IHexagonController
+public interface IHexagonBrain
 {
     public void OnWasAcquired();
 }
