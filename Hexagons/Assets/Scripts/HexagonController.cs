@@ -31,6 +31,7 @@ public class HexagonController : MonoBehaviour
 
     private HexagonController[] _attachedHexagons = new HexagonController[6];
 
+    private HexagonController controller;
     private int? ownerSide;
 
     private void Start()
@@ -43,20 +44,48 @@ public class HexagonController : MonoBehaviour
     {
         _hexagons.Remove(this);
     }
-
-    public void MoveAttached(Vector2 ownerOrigin, Vector2 ownerAttachmentPos, float ownerRadius)
+    public void CalculateAttachedMovement(Vector2 ownerOrigin, Vector2 ownerAttachmentPos, float ownerRadius)
     {
         Vector2 pos = ownerOrigin + (ownerAttachmentPos - ownerOrigin).normalized * (ownerRadius + radius);
-        Debug.Log(pos);
         transform.position = pos;
+
+        CheckAttachment();
     }
 
     public void Move(Vector2 dir)
     {
-        //float angle = Map(0f, 6f, 0f, 2f * Mathf.PI, dir);
-        //Vector2 moveDir = new Vector2(Mathf.Cos(angle), Mathf.Sin(angle));
         transform.Translate(dir * (Time.deltaTime * movementSpeed));
         CheckAttachment();
+        MoveAttached();
+    }
+
+    // add start to queue
+    // Loop while queue is not empty
+    // -Get next from queue
+    // -Loop all attached
+    // --if (attachedHexagon is not checked && attachedHexagon is not in queue)
+    // ---Move attachedHexagon
+    // ---Add attachedHexagon to queue
+    // -Mark hexagon as checked
+    private void MoveAttached()
+    {
+        UniqueQueue<HexagonController> queue = new UniqueQueue<HexagonController>();
+        queue.Enqueue(this);
+        HashSet<HexagonController> checkedHexagons = new HashSet<HexagonController>(); 
+        while (queue.Count < 0)
+        {
+            var hexagon = queue.Dequeue();
+            var points = GetAttachmentPoints();
+            for (var i = 0; i < _attachedHexagons.Length; i++)
+            {
+                var attachedHexagon = _attachedHexagons[i];
+                if (attachedHexagon == null ||
+                    checkedHexagons.Contains(attachedHexagon) ||
+                    queue.Contains(attachedHexagon)) continue;
+
+                attachedHexagon.CalculateAttachedMovement(transform.position, points[i], radius);
+            }
+        }
     }
 
     private void CheckAttachment()
@@ -87,25 +116,26 @@ public class HexagonController : MonoBehaviour
 
                 if (Vector2.Distance(p1, p2) < attachPointRadius + hexagon.attachPointRadius)
                 {
-                    AttachTo(i, hexagon, j);
+                    Attach(i, hexagon, j);
                     Debug.Log("Attached");
                 }
             }
         }
     }
 
-    public void AttachTo(int mySide, HexagonController hexagon, int theirSide)
+    public void Attach(int mySide, HexagonController hexagon, int theirSide)
     {
         _attachedHexagons[mySide] = hexagon;
-        ownerSide = mySide;
         hexagon.Attach(theirSide, hexagon);
+        
+        var points = GetAttachmentPoints();
+        hexagon.CalculateAttachedMovement(transform.position, points[mySide], radius);
     }
 
     public void Attach(int side, HexagonController hexagon)
     {
         _attachedHexagons[side] = hexagon;
-        var points = GetAttachmentPoints();
-        hexagon.MoveAttached(transform.position, points[side], radius);
+        ownerSide = side;
     }
 
     public Vector2[] GetAttachmentPoints()
