@@ -16,6 +16,7 @@ Shader "Unlit/Hexagon"{
 
 		Blend One OneMinusSrcAlpha
 
+
 		ZWrite off
 		Cull off
 
@@ -35,7 +36,7 @@ Shader "Unlit/Hexagon"{
 			float _OutlineBlendInner;
 
 			fixed4 frag(v2f i) : SV_TARGET{
-				float dist = hex((i.uv - 0.5));
+				float dist = hex(i.uv - 0.5);
 				float outline = min(smoothstep(0.0, _OutlineBlendInner, dist * 3), smoothstep(_OutlineWidth, _OutlineWidth - _OutlineBlendOuter, dist * 3));
 
 				return outline * _OutlineColor;
@@ -58,7 +59,7 @@ Shader "Unlit/Hexagon"{
 			float _OutlineBlendInner;
 
 			fixed4 frag(v2f i) : SV_TARGET{
-				float dist = hex((i.uv - 0.5));
+				float dist = hex(i.uv - 0.5);
 				dist = smoothstep(_OutlineBlendInner, 0, dist);
 
 				return dist * _Color;

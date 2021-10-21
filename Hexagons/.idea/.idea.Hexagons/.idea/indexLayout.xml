@@ -10,12 +10,13 @@
       <Path>Library/PackageCache/com.unity.2d.psdimporter@4.1.0</Path>
       <Path>Library/PackageCache/com.unity.2d.sprite@1.0.0</Path>
       <Path>Library/PackageCache/com.unity.2d.spriteshape@5.1.4</Path>
+      <Path>Library/PackageCache/com.unity.2d.tilemap.extras@1.8.0-preview</Path>
       <Path>Library/PackageCache/com.unity.2d.tilemap@1.0.0</Path>
-      <Path>Library/PackageCache/com.unity.collab-proxy@1.7.1</Path>
+      <Path>Library/PackageCache/com.unity.collab-proxy@1.11.2</Path>
       <Path>Library/PackageCache/com.unity.ext.nunit@1.0.6</Path>
       <Path>Library/PackageCache/com.unity.ide.rider@2.0.7</Path>
       <Path>Library/PackageCache/com.unity.ide.visualstudio@2.0.11</Path>
-      <Path>Library/PackageCache/com.unity.ide.vscode@1.2.3</Path>
+      <Path>Library/PackageCache/com.unity.ide.vscode@1.2.4</Path>
       <Path>Library/PackageCache/com.unity.mathematics@1.1.0</Path>
       <Path>Library/PackageCache/com.unity.modules.ai@1.0.0</Path>
       <Path>Library/PackageCache/com.unity.modules.androidjni@1.0.0</Path>
@@ -50,10 +51,12 @@
       <Path>Library/PackageCache/com.unity.modules.vr@1.0.0</Path>
       <Path>Library/PackageCache/com.unity.modules.wind@1.0.0</Path>
       <Path>Library/PackageCache/com.unity.modules.xr@1.0.0</Path>
-      <Path>Library/PackageCache/com.unity.nuget.newtonsoft-json@2.0.0</Path>
-      <Path>Library/PackageCache/com.unity.test-framework@1.1.27</Path>
+      <Path>Library/PackageCache/com.unity.sysroot.linux-x86_64@0.1.14-preview</Path>
+      <Path>Library/PackageCache/com.unity.sysroot@0.1.19-preview</Path>
+      <Path>Library/PackageCache/com.unity.test-framework@1.1.29</Path>
       <Path>Library/PackageCache/com.unity.textmeshpro@3.0.6</Path>
       <Path>Library/PackageCache/com.unity.timeline@1.4.8</Path>
+      <Path>Library/PackageCache/com.unity.toolchain.win-x86_64-linux-x86_64@0.1.21-preview</Path>
       <Path>Library/PackageCache/com.unity.ugui@1.0.0</Path>
       <Path>Packages</Path>
       <Path>ProjectSettings</Path>

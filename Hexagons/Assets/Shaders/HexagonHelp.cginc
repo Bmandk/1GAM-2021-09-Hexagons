@@ -42,3 +42,8 @@ float hex(in float2 p){
     p = abs(p);
     return (max(dot(p, s*.5), p.x) - hexSize);
 }
+
+float rounding( in float d, in float h )
+{
+    return d - h;
+}

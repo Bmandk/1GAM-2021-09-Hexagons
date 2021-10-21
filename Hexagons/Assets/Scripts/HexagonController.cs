@@ -1,222 +1,163 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
-public struct AttachmentPoint
-{
-    public HexagonController attachedHexagon;
-    public Vector2 position;
-}
-
+[RequireComponent(typeof(Hexagon))]
 public class HexagonController : MonoBehaviour
 {
-    [SerializeField]
-    private float radius = 1f;
+    public Color color;
+    public Color outlineColor;
     public float outlineWidth = 0f;
-    public float rotation = 0f;
-
-    public float movementSpeed = 1f;
-
-    public float attachPointRadius = 0.1f;
+    public float outlineBlendOuter = 0f;
 
     // Player = 100
     public int priority;
-
-    public float BoundingRadius { get; private set; }
-
-    public float Radius => radius;
-
-    // Set of all hexagons
-    private static HashSet<HexagonController> _hexagons = new HashSet<HexagonController>();
     
-    [SerializeField]
+
     private HexagonController[] _attachedHexagons = new HexagonController[6];
 
-    private void Start()
-    {
-        _hexagons.Add(this);
-        GenerateHexagon();
-    }
+    private SpriteRenderer _visuals;
+    private Hexagon _hexagon;
 
-    private void OnDestroy()
-    {
-        _hexagons.Remove(this);
-    }
-    public void CalculateAttachedMovement(Vector2 ownerOrigin, Vector2 ownerAttachmentPos, float ownerRadius)
-    {
-        Vector2 pos = ownerOrigin + (ownerAttachmentPos - ownerOrigin).normalized * (ownerRadius + radius);
-        transform.position = pos;
-
-        CheckAttachment();
-    }
-
-    public void Move(Vector2 dir)
-    {
-        SetTRS((Vector2)transform.position + dir * (Time.deltaTime * movementSpeed), rotation, radius);
-    }
-
-    private void SetTRS(Vector2 position, float rotation, float radius)
-    {
-        transform.position = position;
-        CheckAttachment();
-        MoveAttached();
-    }
+    public Vector3Int GridPosition => _hexagon.gridPosition;
     
-    private void MoveAttached()
+    private void Awake()
     {
-        var hexagons = GetConnectedHexagonsBFS();
-        HashSet<HexagonController> movedHexagons = new HashSet<HexagonController>();
+        _hexagon = GetComponent<Hexagon>();
+        _visuals = GetComponentInChildren<SpriteRenderer>();
+        color = _visuals.material.GetColor("_Color");
+        outlineColor = _visuals.material.GetColor("_OutlineColor");
+    }
 
-        foreach (HexagonController hexagon in hexagons)
+    private void OnEnable()
+    {
+        _attachedHexagons = new HexagonController[6];
+    }
+
+    public Vector3Int IntDirToCellDir(int direction)
+    {
+        Vector3Int directionVector = Vector3Int.zero; 
+        switch (direction)
         {
-            var points = hexagon.GetAttachmentPoints();
+            case 0:
+                directionVector = new Vector3Int(GridPosition.y % 2 == 1 ? 1 : 0, 1, 0);
+                break;
+            case 1:
+                directionVector = new Vector3Int(1, 0, 0);
+                break;
+            case 2:
+                directionVector = new Vector3Int(GridPosition.y % 2 == 1 ? 1 : 0, -1, 0);
+                break;
+            case 3:
+                directionVector = new Vector3Int(GridPosition.y % 2 == 0 ? -1 : 0, -1, 0);
+                break;
+            case 4:
+                directionVector = new Vector3Int(-1, 0, 0);
+                break;
+            case 5:
+                directionVector = new Vector3Int(GridPosition.y % 2 == 0 ? -1 : 0, 1, 0);
+                break;
+            default:
+                Debug.LogError("Unknown Direction given");
+                break;
+        }
 
-            for (int i = 0; i < hexagon._attachedHexagons.Length; i++)
+        return directionVector;
+    }
+
+    public bool TryMoveDir(int direction)
+    {
+        Debug.Log(CanMove(direction));
+        if (CanMove(direction))
+        {
+            List<HexagonController> hexagons = GetConnectedHexagonsBFS();
+            foreach (HexagonController hexagon in hexagons)
             {
-                var attachedHexagon = hexagon._attachedHexagons[i];
-                if (attachedHexagon == null || movedHexagons.Contains(attachedHexagon)) continue;
-                
-                attachedHexagon.CalculateAttachedMovement(hexagon.transform.position, points[i], hexagon.radius);
-                movedHexagons.Add(attachedHexagon);
+                hexagon.SetPosition(hexagon.GridPosition + hexagon.IntDirToCellDir(direction));
+                hexagon.CheckAttachment();
             }
         }
+        return true;
+    }
+
+    public bool CanMove(int direction)
+    {
+        List<HexagonController> hexagons = GetConnectedHexagonsBFS();
+        foreach (HexagonController hexagon in hexagons)
+        {
+            Vector3Int cell = hexagon.GridPosition + hexagon.IntDirToCellDir(direction);
+            if (Hexagon.AllHexagons.ContainsKey(cell) && !hexagons.Select(x => x._hexagon).Contains(Hexagon.AllHexagons[cell]))
+                return false;
+        }
+        
+        return true;
+    }
+
+    public void SetPosition(Vector3Int cell)
+    {
+        Vector3 worldPos = Hexagon.Grid.CellToWorld(cell);
+        transform.position = worldPos;
+
+        Hexagon.AllHexagons.Remove(GridPosition);
+        Hexagon.AllHexagons[cell] = _hexagon;
+        _hexagon.gridPosition = cell;
     }
 
     private void CheckAttachment()
     {
-        foreach (HexagonController hexagon in _hexagons)
+        for (int i = 0; i < 6; i++)
         {
-            if (hexagon == this) continue;
-            
-            if (priority < hexagon.priority ||
-                Vector2.Distance(hexagon.transform.position, transform.position) > BoundingRadius + hexagon.BoundingRadius)
+            // Side already has a hexagon
+            if (_attachedHexagons[i] != null)
                 continue;
 
-            var points1 = GetAttachmentPoints();
-            var points2 = hexagon.GetAttachmentPoints();
+            Vector3Int cell = GridPosition + IntDirToCellDir(i);
+            
+            // Cell is unoccupied
+            if (!Hexagon.AllHexagons.ContainsKey(cell))
+                continue;
 
-            for (int i = 0; i < _attachedHexagons.Length; i++)
-            {
-                if (_attachedHexagons[i] != null)
-                    continue;
-                Vector2 p1 = points1[i];
-                
-                int j = i + 3;
-                if (j >= 6)
-                {
-                    j = j - 6;
-                }
-                Vector2 p2 = points2[j];
-
-                if (Vector2.Distance(p1, p2) < attachPointRadius + hexagon.attachPointRadius)
-                {
-                    Attach(i, hexagon, j);
-                }
-            }
+            HexagonController hexagon = Hexagon.AllHexagons[cell].GetComponent<HexagonController>();
+            if (hexagon == null)
+                continue;
+            
+            Attach(i, hexagon, i + 3 > 5 ? i - 3 : i + 3); // Opposite side
         }
     }
 
     public void Attach(int mySide, HexagonController hexagon, int theirSide)
     {
         _attachedHexagons[mySide] = hexagon;
-        hexagon.Attach(theirSide, this);
-        
-        var points = GetAttachmentPoints();
-        hexagon.CalculateAttachedMovement(transform.position, points[mySide], radius);
+        hexagon.AttachHexagon(theirSide, this);
     }
 
-    public void Attach(int side, HexagonController hexagon)
+    public void AttachHexagon(int side, HexagonController hexagon)
     {
         _attachedHexagons[side] = hexagon;
     }
 
-    public Vector2[] GetAttachmentPoints()
+    // Only call at runtime, otherwise it will leak materials into the scene
+    private void UpdateVisuals()
     {
-        Vector2[] points = new Vector2[_attachedHexagons.Length];
+        _visuals.material.SetFloat("_OutlineWidth", outlineWidth);
+        _visuals.material.SetFloat("_OutlineBlendOuter", outlineBlendOuter);
+        _visuals.material.SetColor("_Color", color);
+        _visuals.material.SetColor("_OutlineColor", outlineColor);
+    }
+
+    public List<Vector3Int> GetNeighbourCells()
+    {
+        List<Vector3Int> cells = new List<Vector3Int>();
         
-        float angle = 0;
-        for (int i = 0; i < _attachedHexagons.Length; i++)
+        for (int i = 0; i < 6; i++)
         {
-            angle = i * (Mathf.PI / 3);
-            points[i] = (Vector2)transform.position + AngleToDirSnap(angle) * Radius;
+            cells.Add(IntDirToCellDir(i));
         }
 
-        return points;
-    }
-
-    public void SetRadius(float radius)
-    {
-        if (radius <= 0)
-            return;
-
-        this.radius = radius;
-        GenerateHexagon();
-    }
-    
-    /// <summary>
-    /// Converts a direction relative to the center of the hexagon to the direction that is the closest center of a side
-    /// </summary>
-    /// <param name="dir">Direction relative to the center of the hexagon</param>
-    /// <returns>Direction locked to a hexagon side</returns>
-    public Vector2 DirToDirSnap(Vector2 dir)
-    {
-        float angle = DirToAngleSideSnap(dir);
-        return new Vector2(Mathf.Cos(angle), Mathf.Sin(angle)).normalized;
-    }
-
-    /// <summary>
-    /// Converts a direction relative to the vertex of the hexagon
-    /// </summary>
-    /// <param name="dir">Direction relative to the center of the hexagon</param>
-    /// <returns>The angle in radians</returns>
-    public float DirToAngleSideSnap(Vector2 dir)
-    {
-        float angle = Mathf.Atan2(dir.y, dir.x);
-        if (angle < 0)
-        {
-            angle += 2 * Mathf.PI;
-        }
-
-        angle = AngleToAngleSideSnap(angle);
-        
-        return angle;
-    }
-
-    public Vector2 AngleToDirSnap(float angle)
-    {
-        float a = AngleToAngleSideSnap(angle);
-        return new Vector2(Mathf.Cos(a), Mathf.Sin(a));
-    }
-
-    public float AngleToAngleSideSnap(float angle)
-    {
-        angle = Mathf.Floor(Map(0f, 2f * Mathf.PI, 0f, 6f, angle));
-        return Map(0f, 6f, 0f, 2f * Mathf.PI, angle) + Mathf.PI / 6f;
-    }
-
-    public float Map(float from1, float from2, float to1, float to2, float value)
-    {
-        return Mathf.Lerp(to1, to2, Mathf.InverseLerp(from1, from2, value));
-    }
-    
-    [ContextMenu("Generate Hexagon")]
-    private void GenerateHexagon()
-    {
-        BoundingRadius = radius + attachPointRadius;
-        _attachedHexagons = new HexagonController[6];
-    }
-
-    private void OnDrawGizmos()
-    {
-        Gizmos.DrawWireSphere(transform.position, Radius);
-        Gizmos.DrawWireSphere(transform.position, Radius / 0.866f);
-        var points = GetAttachmentPoints();
-        foreach (Vector2 point in points)
-        {
-            Gizmos.DrawWireSphere(point, attachPointRadius);
-        }
-        Gizmos.DrawWireSphere(transform.position, Radius + attachPointRadius);
+        return cells;
     }
 
     public List<HexagonController> GetConnectedHexagonsBFS()
