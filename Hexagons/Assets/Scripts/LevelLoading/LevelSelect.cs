@@ -15,10 +15,10 @@ public class LevelSelect : MonoBehaviour
             Destroy(child.gameObject);
         }
 
-        for (int i = 0; i < LevelManager.LevelData.levels.Count; i++)
+        for (int i = 0; i < LevelManager.LevelData.levels; i++)
         {
             GameObject button = Instantiate(_buttonPrefab, transform);
-            button.GetComponent<LevelSelectButton>().levelNumber = i;
+            button.GetComponent<LevelSelectButton>().SetLevel(i);
         }
     }
 }

@@ -70,7 +70,6 @@ public class HexagonController : MonoBehaviour
 
     public bool TryMoveDir(int direction)
     {
-        Debug.Log(CanMove(direction));
         if (CanMove(direction))
         {
             List<HexagonController> hexagons = GetConnectedHexagonsBFS();
@@ -79,8 +78,10 @@ public class HexagonController : MonoBehaviour
                 hexagon.SetPosition(hexagon.GridPosition + hexagon.IntDirToCellDir(direction));
                 hexagon.CheckAttachment();
             }
+
+            return true;
         }
-        return true;
+        return false;
     }
 
     public bool CanMove(int direction)
@@ -89,7 +90,7 @@ public class HexagonController : MonoBehaviour
         foreach (HexagonController hexagon in hexagons)
         {
             Vector3Int cell = hexagon.GridPosition + hexagon.IntDirToCellDir(direction);
-            if (Hexagon.AllHexagons.ContainsKey(cell) && !hexagons.Select(x => x._hexagon).Contains(Hexagon.AllHexagons[cell]))
+            if (Hexagon.AllHexagons.ContainsKey(cell) && Hexagon.AllHexagons[cell].isBlocking && !hexagons.Select(x => x._hexagon).Contains(Hexagon.AllHexagons[cell]))
                 return false;
         }
         

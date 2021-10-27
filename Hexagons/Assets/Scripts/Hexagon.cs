@@ -9,6 +9,8 @@ public class Hexagon : MonoBehaviour
     public static Dictionary<Vector3Int, Hexagon> AllHexagons { get; private set; }
     public static Grid Grid { get; private set; }
 
+    public bool isBlocking = false;
+
     private void Awake()
     {
         if (Grid == null)

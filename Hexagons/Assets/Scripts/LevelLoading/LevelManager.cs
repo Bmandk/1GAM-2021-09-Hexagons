@@ -20,12 +20,18 @@ public static class LevelManager
 
     public static void LoadLevel(int level)
     {
-        SceneManager.LoadSceneAsync(LevelData.levels[level].name);
+        // TODO: Rework so that it's not just based on scene level
+        SceneManager.LoadSceneAsync($"Level {level + 1}");
         _currentLevel = level;
     }
 
     public static void LoadNextLevel()
     {
         LoadLevel(++_currentLevel);
+    }
+
+    public static void ReloadCurrentLevel()
+    {
+        SceneManager.LoadScene(SceneManager.GetActiveScene().name);
     }
 }

@@ -1,7 +1,9 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 [RequireComponent(typeof(HexagonController))]
 public class PlayerBrain : MonoBehaviour, IHexagonBrain
@@ -27,33 +29,32 @@ public class PlayerBrain : MonoBehaviour, IHexagonBrain
         CheckInput();
     }
 
-    /*private void CheckGoal()
+    // Checks whether the player is overlapping with the goal
+    private void CheckGoal()
     {
-        var goals = GameObject.FindGameObjectsWithTag("Goal");
+        List<Hexagon> goals = GameObject.FindGameObjectsWithTag("Goal").Select(go => go.GetComponent<Hexagon>()).ToList();
         var attachedHexagons = _hexagonController.GetConnectedHexagonsBFS();
 
         int overlap = 0;
 
-        if (goals.Length <= 0) return;
+        if (goals.Count <= 0) return;
 
-        foreach (GameObject goalGO in goals)
+        foreach (Hexagon hexagon in goals)
         {
-            HexagonController goal = goalGO.GetComponent<HexagonController>();
             foreach (HexagonController attachedHexagon in attachedHexagons)
             {
-                if (Vector2.Distance(goal.transform.position, attachedHexagon.transform.position) <
-                    goal.centerOverlapRadius + attachedHexagon.centerOverlapRadius)
+                if (attachedHexagon.GridPosition == hexagon.gridPosition)
                 {
                     overlap++;
                 }
             }
         }
-
-        if (overlap == goals.Length && overlap == attachedHexagons.Count)
+        
+        if (overlap == goals.Count && overlap == attachedHexagons.Count)
         {
             Debug.Log("Win");
         }
-    }*/
+    }
 
     private void CheckInput()
     {
@@ -70,17 +71,28 @@ public class PlayerBrain : MonoBehaviour, IHexagonBrain
     private void MoveGridKeyboard()
     {
         if (Input.GetKeyDown(KeyCode.E))
-            _hexagonControllerGrid.TryMoveDir(0);
+            TryMove(0);
         if (Input.GetKeyDown(KeyCode.W))
-            _hexagonControllerGrid.TryMoveDir(1);
+            TryMove(1);
         if (Input.GetKeyDown(KeyCode.Q))
-            _hexagonControllerGrid.TryMoveDir(2);
+            TryMove(2);
         if (Input.GetKeyDown(KeyCode.A))
-            _hexagonControllerGrid.TryMoveDir(3);
+            TryMove(3);
         if (Input.GetKeyDown(KeyCode.S))
-            _hexagonControllerGrid.TryMoveDir(4);
+            TryMove(4);
         if (Input.GetKeyDown(KeyCode.D))
-            _hexagonControllerGrid.TryMoveDir(5);
+            TryMove(5);
+
+        if (Input.GetKeyDown(KeyCode.R))
+            LevelManager.ReloadCurrentLevel();
+    }
+
+    private void TryMove(int dir)
+    {
+        if (_hexagonControllerGrid.TryMoveDir(dir))
+        {
+            CheckGoal();
+        }
     }
 
     public void OnWasAcquired()
