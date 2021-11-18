@@ -12,6 +12,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c578ba7097c14f579dcc5d90ab465f34, type: 3}
   m_Name: LevelData
   m_EditorClassIdentifier: 
-  levels: 1
+  levels: 5
   mainMenu: 
   levelSelect: LevelSelect

@@ -6,7 +6,7 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 
 [RequireComponent(typeof(Hexagon))]
-public class HexagonController : MonoBehaviour
+public class HexagonController : MonoBehaviour, IInteractable
 {
     public Color color;
     public Color outlineColor;
@@ -76,7 +76,7 @@ public class HexagonController : MonoBehaviour
             foreach (HexagonController hexagon in hexagons)
             {
                 hexagon.SetPosition(hexagon.GridPosition + hexagon.IntDirToCellDir(direction));
-                hexagon.CheckAttachment();
+                hexagon.CheckInteract();
             }
 
             return true;
@@ -107,7 +107,7 @@ public class HexagonController : MonoBehaviour
         _hexagon.gridPosition = cell;
     }
 
-    private void CheckAttachment()
+    private void CheckInteract()
     {
         for (int i = 0; i < 6; i++)
         {
@@ -125,11 +125,11 @@ public class HexagonController : MonoBehaviour
             if (hexagon == null)
                 continue;
             
-            Attach(i, hexagon, i + 3 > 5 ? i - 3 : i + 3); // Opposite side
+            hexagon.Interact(i + 3 > 5 ? i - 3 : i + 3, this, i);
         }
     }
 
-    public void Attach(int mySide, HexagonController hexagon, int theirSide)
+    public void Interact(int mySide, HexagonController hexagon, int theirSide)
     {
         _attachedHexagons[mySide] = hexagon;
         hexagon.AttachHexagon(theirSide, this);

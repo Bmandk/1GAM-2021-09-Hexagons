@@ -15,6 +15,8 @@ public class PlayerBrain : MonoBehaviour, IHexagonBrain
     private HexagonController _hexagonController;
     private HexagonController _hexagonControllerGrid;
 
+    private bool didWin;
+
     private void Awake()
     {
         _hexagonController = GetComponent<HexagonController>();
@@ -26,6 +28,9 @@ public class PlayerBrain : MonoBehaviour, IHexagonBrain
     // Update is called once per frame
     void Update()
     {
+        if (didWin)
+            return;
+        
         CheckInput();
     }
 
@@ -52,7 +57,8 @@ public class PlayerBrain : MonoBehaviour, IHexagonBrain
         
         if (overlap == goals.Count && overlap == attachedHexagons.Count)
         {
-            Debug.Log("Win");
+            didWin = true;
+            UIManager.Instance.ShowWinPanel();
         }
     }
 
